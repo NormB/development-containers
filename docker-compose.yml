@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+
+  vault:
+    container_name: vault
+    restart: unless-stopped
+    image: vault
+    hostname: vault
+    ports:
+    - "8200:8200"
+    env_file:
+    - vault/config.env
+
+  postgres:
+    container_name: postgres
+    restart: unless-stopped
+    image: postgres
+    hostname: postgres
+    ports:
+    - "5432:5432"
+    env_file:
+    - postgres/variables.env
+    volumes:
+    - pgdata:/var/lib/postgresql/data
+    - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  mosquitto:
+    container_name: mosquitto
+    restart: unless-stopped
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    ports:
+    - "1883:1883"
+    - "1884:1884"
+    volumes:
+    - ./mosquitto:/mosquitto
+
+  opensips:
+    image: opensips:${TAG:-v1.0.0}
+    build:
+        dockerfile: Dockerfile.opensips
+    container_name: opensips
+    restart: unless-stopped
+    hostname: opensips
+    ports:
+    - "5060:5060/udp"
+    - "5060:5060/tcp"
+    #stdin_open: true
+    #tty: true
+    #command: bash
+
+  freeswitch:
+    image: freeswitch:${TAG:-v1.0.0}
+    build:
+        dockerfile: Dockerfile.freeswitch
+    container_name: freeswitch
+    restart: unless-stopped
+    hostname: freeswitch
+    ports:
+    - "6060:6060/udp"
+    - "6060:6060/tcp"
+    env_file:
+      - freeswitch/variables.env
+    #stdin_open: true
+    #tty: true
+    #command: bash
+
+volumes:
+  pgdata:
+

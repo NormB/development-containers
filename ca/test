@@ -1,0 +1,2 @@
+docker build -t docker-ca:latest .
+docker run -v /tmp/ca_folder:/root/ca:rw docker-ca server postgres postgres
