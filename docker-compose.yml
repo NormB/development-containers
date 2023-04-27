@@ -12,9 +12,9 @@ services:
     ports:
     - "5060:5060/udp"
     - "5060:5060/tcp"
-    stdin_open: true
-    tty: true
-    command: bash
+    #stdin_open: true
+    #tty: true
+    #command: bash
 
 volumes:
   pgdata:
