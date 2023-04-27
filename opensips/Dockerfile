@@ -96,6 +96,7 @@ RUN apt-get update \
         rsyslog \
         sngrep \
         sqlite3 \
+        sqlite3-pcre \
         tar \
         tcpdump \
         tzdata \
@@ -136,6 +137,7 @@ ENV INCLUDE_MODULES \
     json \
     httpd \
     db_postgres \
+    db_sqlite \
     auth_jwt
 
 COPY opensips.cfg /usr/local/etc/opensips/
