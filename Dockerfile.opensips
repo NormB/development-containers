@@ -160,8 +160,8 @@ RUN groupadd -r opensips --gid=1001 \
     && useradd -r -g opensips --uid=1001 opensips \
     && chown -R opensips:opensips /usr/local/etc/opensips
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="${HOME}/.cargo/bin:${PATH}"
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # UI
 EXPOSE 80
