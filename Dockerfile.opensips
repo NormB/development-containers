@@ -181,7 +181,8 @@ FROM opensips-build
 
 COPY --from=rust-build /rust-experiment/target/debug/librust_experiment.so /usr/local/lib64/opensips/modules/rust_experiment.so
 
-COPY opensips/opensips.cfg /usr/local/etc/opensips/
+COPY opensips/opensips.cfg /usr/local/etc/opensips/opensips.cfg
+COPY opensips/regex_groups /usr/local/etc/opensips/regex_groups
 COPY opensips/opensips-cli.cfg /etc/opensips-cli.cfg
 
 # UI
