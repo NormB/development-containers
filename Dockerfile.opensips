@@ -4,7 +4,7 @@
 # docker run -d --rm --privileged --cap-add sys_ptrace -p127.0.0.1:2222:22 -p 5060:5060 --name opensips opensips:0.1
 # docker run -d --name opensips opensips:0.1
 
-FROM debian:latest as builder
+FROM debian:latest as toolchain
 ENV OS_RELEASE=bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -121,20 +121,21 @@ ENV LANG en_US.utf8
 RUN echo UTC > /etc/timezone \
   && /usr/sbin/dpkg-reconfigure -f noninteractive tzdata
 
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN cargo install cargo-chef
+
+####################
+FROM toolchain as opensips-sources
+
 COPY opensips/opensips /usr/local/src/opensips
 COPY opensips/opensips-cli /usr/local/src/opensips-cli
 
 RUN cd /usr/local/src/opensips-cli \
     && /usr/bin/python3 setup.py install clean
 
-#RUN cd /usr/local/src/opensips \
-#    && FASTER=1 make -j4 install \
-#    && make install
-
-#RUN cd /usr/local/src \
-#    && git clone https://github.com/opensips/opensips.git \
-#    && cd /usr/local/src/opensips \
-#    && git submodule update --init
+####################
+FROM opensips-sources as opensips-build
 
 ENV INCLUDE_MODULES \
     tls_mgm \
@@ -150,9 +151,6 @@ ENV INCLUDE_MODULES \
     db_sqlite \
     auth_jwt
 
-COPY opensips/opensips.cfg /usr/local/etc/opensips/
-COPY opensips/opensips-cli.cfg /etc/opensips-cli.cfg
-
 RUN cd /usr/local/src/opensips \
     && make proper \
     && make TLS=1 include_modules="${INCLUDE_MODULES}" modules \
@@ -162,8 +160,30 @@ RUN groupadd -r opensips --gid=1001 \
     && useradd -r -g opensips --uid=1001 opensips \
     && chown -R opensips:opensips /usr/local/etc/opensips
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="${HOME}/.cargo/bin:${PATH}"
+####################
+FROM opensips-sources as rust-prepare
+
+COPY rust-experiment /rust-experiment
+ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
+RUN cd /rust-experiment && cargo chef prepare
+
+####################
+FROM opensips-sources as rust-build
+COPY --from=rust-prepare /rust-experiment/recipe.json /rust-experiment/recipe.json
+RUN cd /rust-experiment && cargo chef cook
+
+COPY rust-experiment /rust-experiment
+ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
+RUN cd /rust-experiment && cargo build
+
+####################
+FROM opensips-build
+
+COPY --from=rust-build /rust-experiment/target/debug/librust_experiment.so /usr/local/lib64/opensips/modules/rust_experiment.so
+
+COPY opensips/opensips.cfg /usr/local/etc/opensips/opensips.cfg
+COPY opensips/regex_groups /usr/local/etc/opensips/regex_groups
+COPY opensips/opensips-cli.cfg /etc/opensips-cli.cfg
 
 # UI
 EXPOSE 80
