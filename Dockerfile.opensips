@@ -169,11 +169,14 @@ RUN cd /rust-experiment && cargo chef prepare
 
 ####################
 FROM opensips-sources as rust-build
+
+ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
+
+COPY rust-experiment /rust-experiment
 COPY --from=rust-prepare /rust-experiment/recipe.json /rust-experiment/recipe.json
 RUN cd /rust-experiment && cargo chef cook
 
 COPY rust-experiment /rust-experiment
-ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
 RUN cd /rust-experiment && cargo build
 
 ####################
