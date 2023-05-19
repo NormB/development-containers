@@ -163,23 +163,26 @@ RUN groupadd -r opensips --gid=1001 \
 ####################
 FROM opensips-sources as rust-prepare
 
-COPY rust-experiment /rust-experiment
+COPY --link rust-experiment /rust-experiment
 ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
 RUN cd /rust-experiment && cargo chef prepare
 
 ####################
 FROM opensips-sources as rust-build
-COPY --from=rust-prepare /rust-experiment/recipe.json /rust-experiment/recipe.json
+
+ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
+
+COPY --link rust-experiment /rust-experiment
+COPY --link --from=rust-prepare /rust-experiment/recipe.json /rust-experiment/recipe.json
 RUN cd /rust-experiment && cargo chef cook
 
-COPY rust-experiment /rust-experiment
-ENV OPENSIPS_SRC_DIR /usr/local/src/opensips
+COPY --link rust-experiment /rust-experiment
 RUN cd /rust-experiment && cargo build
 
 ####################
 FROM opensips-build
 
-COPY --from=rust-build /rust-experiment/target/debug/librust_experiment.so /usr/local/lib64/opensips/modules/rust_experiment.so
+COPY --link --from=rust-build /rust-experiment/target/debug/librust_experiment.so /usr/local/lib64/opensips/modules/rust_experiment.so
 
 COPY opensips/opensips.cfg /usr/local/etc/opensips/opensips.cfg
 COPY opensips/regex_groups /usr/local/etc/opensips/regex_groups
